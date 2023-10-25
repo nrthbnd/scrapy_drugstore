@@ -27,7 +27,7 @@ ROBOTSTXT_OBEY = True
 DEFAULT_REQUEST_HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:32.0) Gecko/20100101 Firefox/32.0",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-    "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7" 
+    "Accept-Language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
 }
 
 # Enable or disable spider middlewares
@@ -84,6 +84,6 @@ FEEDS = {
     'testing1.json': {
         'format': 'json',
         'fields': ['timestamp', 'RPC', 'url', 'title', 'marketing_tags', 'section'],
-        'overwrite': True
+        'overwrite': True,
     }
 }
