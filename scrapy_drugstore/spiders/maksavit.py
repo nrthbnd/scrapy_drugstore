@@ -1,3 +1,5 @@
+# import os
+
 import scrapy
 from datetime import datetime
 from scrapy.http import Request
@@ -7,6 +9,11 @@ from scrapy_drugstore.items import ScrapyDrugstoreItem
 
 class MaksavitSpider(scrapy.Spider):
     name = 'maksavit'
+    # domain = os.getenv('ALLOWED_DOMAIN')
+    # start_url = os.getenv('START_URL')
+    # allowed_domains = [domain]
+    # start_urls = [start_url]
+
     allowed_domains = ["maksavit.ru"]
     start_urls = ["https://maksavit.ru/novosibirsk/catalog/materinstvo_i_detstvo/detskaya_gigiena/"]
 
@@ -33,6 +40,11 @@ class MaksavitSpider(scrapy.Spider):
             else:
                 marketing_tags = marketing_full.css('::text').get().strip()
 
+            yield response.follow(
+                url,
+                callback=self.parse_product,
+            )
+
             data = {
                 'timestamp': timestamp,
                 'RPC': item_id,
@@ -43,12 +55,26 @@ class MaksavitSpider(scrapy.Spider):
             }
             yield ScrapyDrugstoreItem(data)
 
-        pagination_ul = response.css('ul.ui-pagination')
-        last_page = pagination_ul.css('li:nth-last-child(2)')
-        last_page_href = last_page.css('a::attr(href)').get().split('/?page=')
-        short_link, last_page_num1 = last_page_href[0], last_page_href[-1]
+        # Пагинация:
+        # pagination_ul = response.css('ul.ui-pagination')
+        # last_page = pagination_ul.css('li:nth-last-child(2)')
+        # last_page_href = last_page.css('a::attr(href)').get().split('/?page=')
+        # short_link, last_page_num1 = last_page_href[0], last_page_href[-1]
 
-        for page in range(2, int(last_page_num1) + 1):
-            page_link = response.urljoin(
-                short_link + '/?page=' + str(page))
-            yield response.follow(page_link, callback=self.parse)
+        # for page in range(2, int(last_page_num1) + 1):
+        #     page_link = response.urljoin(
+        #         short_link + '/?page=' + str(page))
+        #     yield response.follow(page_link, callback=self.parse)
+
+    def parse_product(self, response):
+        """Загрузить со страницы товара данные о нем."""
+        brand_info = response.css('a.product-info__brand-value::text')
+        if not brand_info:
+            brand = ''
+        else:
+            brand = brand_info.get().strip().split(',')[0]
+        data1 = {
+                'brand': brand,
+        }
+        # yield data1
+        yield ScrapyDrugstoreItem(data1)
