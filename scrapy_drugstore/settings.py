@@ -1,3 +1,7 @@
+from pathlib import Path
+
+BASE_DIR = Path(__file__).parent
+
 BOT_NAME = "scrapy_drugstore"
 
 SPIDER_MODULES = ["scrapy_drugstore.spiders"]
@@ -81,9 +85,9 @@ TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
 
 FEEDS = {
-    'testing1.json': {
+    (BASE_DIR / 'results/checking.json').as_posix(): {
         'format': 'json',
-        'fields': ['timestamp', 'RPC', 'url', 'title', 'marketing_tags', 'section'],
+        'fields': ['timestamp', 'RPC', 'url', 'title', 'marketing_tags', 'brand', 'section'],
         'overwrite': True,
     }
 }
