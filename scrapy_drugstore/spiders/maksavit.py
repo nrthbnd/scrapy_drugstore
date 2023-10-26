@@ -40,11 +40,6 @@ class MaksavitSpider(scrapy.Spider):
             else:
                 marketing_tags = marketing_full.css('::text').get().strip()
 
-            yield response.follow(
-                url,
-                callback=self.parse_product,
-            )
-
             data = {
                 'timestamp': timestamp,
                 'RPC': item_id,
@@ -53,7 +48,13 @@ class MaksavitSpider(scrapy.Spider):
                 'marketing_tags': marketing_tags,
                 'section': [main_section, category]
             }
-            yield ScrapyDrugstoreItem(data)
+
+            yield response.follow(
+                url,
+                callback=self.parse_product,
+                cb_kwargs={'data': data},
+            )
+            # yield ScrapyDrugstoreItem(data)
 
         # Пагинация:
         # pagination_ul = response.css('ul.ui-pagination')
@@ -66,7 +67,7 @@ class MaksavitSpider(scrapy.Spider):
         #         short_link + '/?page=' + str(page))
         #     yield response.follow(page_link, callback=self.parse)
 
-    def parse_product(self, response):
+    def parse_product(self, response, data):
         """Загрузить со страницы товара данные о нем."""
         brand_info = response.css('a.product-info__brand-value::text')
         if not brand_info:
@@ -76,5 +77,6 @@ class MaksavitSpider(scrapy.Spider):
         data1 = {
                 'brand': brand,
         }
+        data.update(data1)
         # yield data1
-        yield ScrapyDrugstoreItem(data1)
+        yield ScrapyDrugstoreItem(data)
