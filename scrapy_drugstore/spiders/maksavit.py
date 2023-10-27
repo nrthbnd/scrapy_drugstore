@@ -1,47 +1,68 @@
 import os
 import re
-import scrapy
 from datetime import datetime
-from scrapy.http import Request
+from typing import Dict
 
+import scrapy
+from scrapy.http import Request
+from scrapy_drugstore.constants import (
+    ALL_EXCEPT_DIGITS_AND_PERIOD,
+    BADGE_DISCOUNT, BREADCRUMBS_LI_TAG,
+    BREADCRUMBS_TAG, BUTTON_TEXT,
+    BUTTON_TEXT_TAG, CARD_BLOCK_TITLE,
+    CATEGORY_TEXT, CITY,
+    COUNTRY_META, CURRENT_PRICE_TAG,
+    DESCRIPTION_TEXT_TAG,
+    DESCRIPTION_TITLE_TAG, DIV_TAG,
+    EMPTY_STR, LAST_PAGE_HREF,
+    LAST_PAGE_TAG, MAIN_IMAGE_TAG,
+    MAIN_SECTION_TAG, ORIGINAL_PRICE_TAG,
+    PAGE_URL, PAGINATION_UL_TAG,
+    PRICE_BOX_CONTROLS_TAG, PRICE_BOX_TAG,
+    PRODUCT_CARD_BLOCK, PRODUCT_INFO_TAG,
+    PRODUCT_INSTRUCTION_TAG,
+    PRODUCT_PICTURE_TAG, PRODUCTS,
+    SHORT_URL, TEXT_TAG, TITLE_TEXT,
+    WHITESPACE_STR, WHITESPACES_ONE_PLUS,
+    WHITESPACES_ZERO_PLUS,
+    WHITESPACES_ZERO_PLUS_BEG)
 from scrapy_drugstore.items import ScrapyDrugstoreItem
+from scrapy_drugstore.utils import calculate_sale
 
 
 class MaksavitSpider(scrapy.Spider):
     name = 'maksavit'
-    domain = os.getenv('ALLOWED_DOMAIN', '')
-    urls = os.getenv('START_URL', '').split(',')
+    domain = os.getenv('ALLOWED_DOMAIN', EMPTY_STR)
+    urls = os.getenv('START_URL', EMPTY_STR).split(',')
     for url in urls:
-        if 'novosibirsk' not in url:
-            url = url.replace(domain, domain + '/novosibirsk/')
+        if CITY not in url:
+            url = url.replace(domain, domain + '/' + CITY + '/')
 
     allowed_domains = [domain]
     start_urls = urls
 
-    def parse(self, response):
+    def parse(self, response: scrapy.http.Response) -> Dict[str, str]:
         """Загрузить со страницы категории общие данные
         о каждом из представленных товаров."""
-        breadcrumbs = response.css('ul.breadcrumbs')
-        breadcrumbs_li = breadcrumbs.css('li:nth-child(3)')
-        main_section = breadcrumbs_li.css('span::text').get().strip()
+        breadcrumbs = response.css(BREADCRUMBS_TAG)
+        breadcrumbs_li = breadcrumbs.css(BREADCRUMBS_LI_TAG)
+        main_section = breadcrumbs_li.css(MAIN_SECTION_TAG).get().strip()
 
-        products = response.css('div.grid-type-container')
-        for product in products.css('div.product-card-block'):
-            card_block = product.css('a.product-card-block__title')
-            short_url = card_block.css('::attr(href)').get()
+        products = response.css(PRODUCTS)
+        for product in products.css(PRODUCT_CARD_BLOCK):
+            card_block = product.css(CARD_BLOCK_TITLE)
+            short_url = card_block.css(SHORT_URL).get()
 
             timestamp = datetime.timestamp(datetime.now())
             item_id = short_url.split('/')[-2]
             url = Request(response.urljoin(short_url)).url
-            title = card_block.css('span::text').get()
+            title = card_block.css(TITLE_TEXT).get()
             category = product.css(
-                'a.product-card-block__category::text').get().strip()
+                CATEGORY_TEXT).get().strip()
 
-            marketing_full = product.css('div.badge-discount')
-            if not marketing_full:
-                marketing_tags = []
-            else:
-                marketing_tags = marketing_full.css('::text').get().strip()
+            marketing_full = product.css(BADGE_DISCOUNT)
+            marketing_tags = ([] if not marketing_full else (
+                marketing_full.css(TEXT_TAG).get().strip()))
 
             data = {
                 'timestamp': timestamp,
@@ -58,72 +79,67 @@ class MaksavitSpider(scrapy.Spider):
                 cb_kwargs={'data': data},
             )
 
-        # Пагинация:
-        pagination_ul = response.css('ul.ui-pagination')
-        last_page = pagination_ul.css('li:nth-last-child(2)')
-        last_page_href = last_page.css('a::attr(href)').get().split('/?page=')
+        pagination_ul = response.css(PAGINATION_UL_TAG)
+        last_page = pagination_ul.css(LAST_PAGE_TAG)
+        last_page_href = last_page.css(LAST_PAGE_HREF).get().split(PAGE_URL)
         short_link, last_page_num1 = last_page_href[0], last_page_href[-1]
 
         for page in range(2, int(last_page_num1) + 1):
             page_link = response.urljoin(
-                short_link + '/?page=' + str(page))
+                short_link + PAGE_URL + str(page))
             yield response.follow(page_link, callback=self.parse)
 
-    def parse_product(self, response, data):
+    def parse_product(
+            self,
+            response: scrapy.http.Response,
+            data: Dict
+    ) -> Dict[str, str]:
         """Загрузить со страницы товара специфичные данные о нем."""
-        brand_country_info = response.css('a.product-info__brand-value::text')
+        brand_country_info = response.css(PRODUCT_INFO_TAG)
         if not brand_country_info:
-            brand, country = '', ''
+            brand, country = EMPTY_STR, EMPTY_STR
         else:
             brand_country_parts = brand_country_info.get().strip().split(',')
             brand = brand_country_parts[0].strip()
             country = brand_country_parts[2].strip() if len(
-                brand_country_parts) > 2 else ''
+                brand_country_parts) > 2 else EMPTY_STR
 
-        price_box = response.css('div.price-box')
-        current_price = price_box.css('span.price-value::text').get()
-        current_price = re.sub(r'[^\d.]', '', current_price)
-        original_price = price_box.css('div.price-box__old-price::text').get()
-        if not original_price:
-            original_price = current_price
-        else:
-            original_price = re.sub(r'[^\d.]', '', original_price)
+        price_box = response.css(PRICE_BOX_TAG)
+        current_price = price_box.css(CURRENT_PRICE_TAG).get()
+        current_price = re.sub(
+            ALL_EXCEPT_DIGITS_AND_PERIOD, EMPTY_STR, current_price)
+        original_price = price_box.css(ORIGINAL_PRICE_TAG).get()
+        original_price = current_price if not original_price else (
+            re.sub(ALL_EXCEPT_DIGITS_AND_PERIOD, EMPTY_STR, original_price))
+        sale = calculate_sale(current_price, original_price)
 
-        if current_price != original_price:
-            sale_amount = round(
-                100 - 100 * int(current_price) / int(original_price), 2)
-            sale = f'Скидка {sale_amount}%.'
-        else:
-            sale = ''
+        price_box_controls = price_box.css(PRICE_BOX_CONTROLS_TAG)
+        button = price_box_controls.css(BUTTON_TEXT_TAG).get()
+        in_stock = True if button.strip() == BUTTON_TEXT else False
 
-        price_box_controls = price_box.css('div.price-box__controls')
-        button = price_box_controls.css('button.button::text').get()
-        if button.strip() == 'В корзину':
-            in_stock = True
-        else:
-            in_stock = False
+        product_picture = response.css(PRODUCT_PICTURE_TAG)
+        main_image_src = product_picture.css(MAIN_IMAGE_TAG).get()
+        main_image = EMPTY_STR if not main_image_src else (
+            response.urljoin(main_image_src))
 
-        product_picture = response.css('div.product-picture')
-        main_image_src = product_picture.css('img::attr(src)').get()
-        if not main_image_src:
-            main_image = ''
-        else:
-            main_image = response.urljoin(main_image_src)
-
-        product_instruction = response.css('div.product-instruction__guide')
+        product_instruction = response.css(PRODUCT_INSTRUCTION_TAG)
         metadata = {}
-        if country != '':
-            metadata['Страна производитель'] = country
-        for item in product_instruction.css('div'):
-            name_item = item.css('h3::text')
+        if country != EMPTY_STR:
+            metadata[COUNTRY_META] = country
+        for item in product_instruction.css(DIV_TAG):
+            name_item = item.css(DESCRIPTION_TITLE_TAG)
             if name_item:
                 name = name_item.get()
-                description_parts = item.xpath('.//text()').getall()
-                description = ' '.join(description_parts).strip()
+                description_parts = item.xpath(DESCRIPTION_TEXT_TAG).getall()
+                description = WHITESPACE_STR.join(description_parts).strip()
                 if description:
                     description = re.sub(
-                        r'^\s*' + re.escape(name) + r'\s*', '', description)
-                    description = re.sub(r'\s+', ' ', description)
+                        WHITESPACES_ZERO_PLUS_BEG + re.escape(name) + (
+                            WHITESPACES_ZERO_PLUS),
+                        EMPTY_STR,
+                        description)
+                    description = re.sub(
+                        WHITESPACES_ONE_PLUS, WHITESPACE_STR, description)
                     metadata[name] = description.strip()
 
         specific_data = {
@@ -139,9 +155,9 @@ class MaksavitSpider(scrapy.Spider):
                 },
                 'assets': {
                     'main_image': main_image,
-                    'set_images': [''],
-                    'view360': [''],
-                    'video': '',
+                    'set_images': [EMPTY_STR],
+                    'view360': [EMPTY_STR],
+                    'video': EMPTY_STR,
                 },
                 'metadata': metadata,
                 'variants': 0,
