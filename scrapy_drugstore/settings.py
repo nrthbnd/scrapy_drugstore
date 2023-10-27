@@ -7,10 +7,9 @@ BASE_DIR = Path(__file__).parent
 
 BOT_NAME = "scrapy_drugstore"
 
-SPIDER_MODULES = ["scrapy_drugstore.spiders"]
+SPIDER_MODULES = ("scrapy_drugstore.spiders")
 NEWSPIDER_MODULE = "scrapy_drugstore.spiders"
 
-# Obey robots.txt rules
 ROBOTSTXT_OBEY = True
 
 DEFAULT_REQUEST_HEADERS = {
@@ -31,10 +30,10 @@ FEED_EXPORT_ENCODING = "utf-8"
 FEEDS = {
     (BASE_DIR / 'results/scrapy_result.json').as_posix(): {
         'format': 'json',
-        'fields': [
+        'fields': (
             'timestamp', 'RPC', 'url', 'title', 'marketing_tags', 'brand',
             'section', 'price_data', 'stock', 'assets', 'metadata', 'variants'
-        ],
+        ),
         'overwrite': True,
     }
 }
