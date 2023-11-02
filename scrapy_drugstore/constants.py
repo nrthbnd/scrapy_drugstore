@@ -5,15 +5,14 @@ PAGE_URL = '/?page='
 # html_tags parse
 BREADCRUMBS_TAG = 'ul.breadcrumbs'
 BREADCRUMBS_LI_TAG = 'li:nth-child(3)'
-MAIN_SECTION_TAG = 'span::text'
 PRODUCTS = 'div.grid-type-container'
 PRODUCT_CARD_BLOCK = 'div.product-card-block'
 CARD_BLOCK_TITLE = 'a.product-card-block__title'
 SHORT_URL = '::attr(href)'
-TITLE_TEXT = 'span::text'
 CATEGORY_TEXT = 'a.product-card-block__category::text'
 BADGE_DISCOUNT = 'div.badge-discount'
 TEXT_TAG = '::text'
+SPAN_TEXT = 'span::text'
 
 # html_tags parse_product
 PRODUCT_INFO_TAG = 'a.product-info__brand-value::text'
@@ -29,6 +28,7 @@ PRODUCT_INSTRUCTION_TAG = 'div.product-instruction__guide'
 COUNTRY_META = 'Страна производитель'
 DIV_TAG = 'div'
 DESCRIPTION_TITLE_TAG = 'h3::text'
+# позволяет получить все текстовые знач-я из элемента item и его дочерних эл-в
 DESCRIPTION_TEXT_TAG = './/text()'
 
 # pagination_tags
@@ -40,7 +40,7 @@ LAST_PAGE_HREF = 'a::attr(href)'
 CITY = 'novosibirsk'
 
 # regular_expressions
-# выюрать символы, которые не являются цифрой или точкой
+# выбрать символы, которые не являются цифрой или точкой
 ALL_EXCEPT_DIGITS_AND_PERIOD = r'[^\d.]'
 # выбрать все пробелы в начале строки
 WHITESPACES_ZERO_PLUS_BEG = r'^\s*'
