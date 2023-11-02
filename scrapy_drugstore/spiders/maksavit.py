@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Dict
 
 import scrapy
-from scrapy.http import Request
 from scrapy_drugstore.constants import (
     ALL_EXCEPT_DIGITS_AND_PERIOD,
     BADGE_DISCOUNT, BREADCRUMBS_LI_TAG,
@@ -12,17 +11,17 @@ from scrapy_drugstore.constants import (
     BUTTON_TEXT_TAG, CARD_BLOCK_TITLE,
     CATEGORY_TEXT, CITY,
     COUNTRY_META, CURRENT_PRICE_TAG,
-    DESCRIPTION_TEXT_TAG,
+    DESCRIPTION_TEXT_TAG, SPAN_TEXT,
     DESCRIPTION_TITLE_TAG, DIV_TAG,
     EMPTY_STR, LAST_PAGE_HREF,
     LAST_PAGE_TAG, MAIN_IMAGE_TAG,
-    MAIN_SECTION_TAG, ORIGINAL_PRICE_TAG,
+    ORIGINAL_PRICE_TAG,
     PAGE_URL, PAGINATION_UL_TAG,
     PRICE_BOX_CONTROLS_TAG, PRICE_BOX_TAG,
     PRODUCT_CARD_BLOCK, PRODUCT_INFO_TAG,
     PRODUCT_INSTRUCTION_TAG,
     PRODUCT_PICTURE_TAG, PRODUCTS,
-    SHORT_URL, TEXT_TAG, TITLE_TEXT,
+    SHORT_URL, TEXT_TAG,
     WHITESPACE_STR, WHITESPACES_ONE_PLUS,
     WHITESPACES_ZERO_PLUS,
     WHITESPACES_ZERO_PLUS_BEG)
@@ -46,7 +45,7 @@ class MaksavitSpider(scrapy.Spider):
         о каждом из представленных товаров."""
         breadcrumbs = response.css(BREADCRUMBS_TAG)
         breadcrumbs_li = breadcrumbs.css(BREADCRUMBS_LI_TAG)
-        main_section = breadcrumbs_li.css(MAIN_SECTION_TAG).get().strip()
+        main_section = breadcrumbs_li.css(SPAN_TEXT).get().strip()
 
         products = response.css(PRODUCTS)
         for product in products.css(PRODUCT_CARD_BLOCK):
@@ -55,8 +54,8 @@ class MaksavitSpider(scrapy.Spider):
 
             timestamp = datetime.timestamp(datetime.now())
             item_id = short_url.split('/')[-2]
-            url = Request(response.urljoin(short_url)).url
-            title = card_block.css(TITLE_TEXT).get()
+            url = response.urljoin(short_url)
+            title = card_block.css(SPAN_TEXT).get()
             category = product.css(
                 CATEGORY_TEXT).get().strip()
 
